@@ -111,18 +111,28 @@ class PostgresDriver:
         """)
 
     def add_user(self, name, age):
-        return self.create(
-            "users",
-            {"name": name, "age": age},
-            returning="*"
-        )
+        try:
+            with self.connect().cursor() as cur:
+                cur.execute(
+                    "INSERT INTO users (name, age) VALUES (%s,%s)",
+                    (name, age)
+                )
+                self._conn.commit()
+        except psycopg2.Error:
+            self._conn.rollback()
+            raise
 
     def add_order(self, user_id, amount):
-        return self.create(
-            "orders",
-            {"user_id": user_id, "amount": amount},
-            returning="*"
-        )
+        try:
+            with self.connect().cursor() as cur:
+                cur.execute(
+                    "INSERT INTO orders (user_id, amount) VALUES (%s,%s)",
+                    (user_id, amount)
+                )
+                self._conn.commit()
+        except psycopg2.Error:
+            self._conn.rollback()
+            raise
 
     def get_user_totals(self):
         return self.fetch_all("""
